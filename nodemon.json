@@ -1,0 +1,4 @@
+{
+    "exec": "ts-node webserver/index.ts & ts-node mcserver/index.ts",
+    "ext": "ts"
+}

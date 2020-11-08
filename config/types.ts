@@ -7,14 +7,13 @@ export interface Config {
 
 export interface ServerConfig {
     name: string
-    deploy: {
-        version?: {
+    deploy?: { // Dont include this if you want to supress automatic setup of the server and version updates
+        version: {
             url:string, // Download link for the minecraft server software
             name:string,
         }
-        manual?: boolean, // Supress automatic setup of the server and version updates
-        options?: MinecraftServerOptions,
-        arguments?: string[]
+        options: MinecraftServerOptions,
+        arguments: string[]
     },
     display: {
         exposedStats: {[key: string]: string}, // Mapping from internal stats keys to display name on the website

@@ -4,7 +4,7 @@ import { readFileSync } from "fs";
 import http from "http"
 import https from "https"
 import { join } from "path";
-import { USE_DEV_PORTS, USE_HTTP } from "../config/config";
+import { USE_DEV_PORTS, USE_HTTP, USE_HTTPS } from "../config/config";
 import { startUpdates } from "./update";
 
 var app = express();
@@ -26,7 +26,7 @@ if (USE_HTTP) {
         console.log("HTTP Server running!")
     })
 }
-if (USE_HTTP) {
+if (USE_HTTPS) {
     var options = {
         key: readFileSync(join(__dirname,'../key.pem')),
         cert: readFileSync(join(__dirname,'../cert.pem')),
