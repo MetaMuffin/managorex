@@ -1,14 +1,16 @@
 
-import express from "express"
+import express, { response } from "express"
 import { createWriteStream } from "fs"
 import { mkdir, readFile, stat, unlink, writeFile } from "fs/promises"
 import { join } from "path"
-import { SERVERS_ROOT } from "../config/config"
+import { CONFIG, MCSERVER_BIND, SERVERS_ROOT } from "../config/config"
 import http, { Server } from "http"
 import https from "https"
 import { ServerConfig } from "../config/types"
 import { stdout } from "process"
-import { launchAndQuit } from "./server"
+import { launchAndQuit, launchNormalSafe } from "./server"
+import { getStats } from "./stats"
+
 
 const hostapp = express()
 
@@ -25,7 +27,7 @@ export async function acceptEula(name: string) {
 }
 
 export function downloadAndSave(path: string, url: string): Promise<void> {
-    process.stdout.write("Downloading server....");
+    process.stdout.write("Downloading server to " + path);
     var dist = join(path, "server.jar")
     return new Promise((resolve, reject) => {
         var file = createWriteStream(dist);
@@ -40,7 +42,6 @@ export function downloadAndSave(path: string, url: string): Promise<void> {
         }).on("error", (err) => {
             unlink(dist);
             console.log("Failed to download server from: " + url);
-
             reject()
         });
     })
@@ -49,7 +50,7 @@ export function downloadAndSave(path: string, url: string): Promise<void> {
 export async function updateServer(config: ServerConfig) {
     if (!config.deploy) return
     var path = pathToServer(config.name)
-    await unlink(join(path,"server.jar"))
+    //await unlink(join(path,"server.jar"))
     await downloadAndSave(path,config.deploy.version.url)
 }
 
@@ -106,8 +107,9 @@ hostapp.use(express.json())
 hostapp.post("/update",async (req,res) => {
     console.log("Update requested");
     var configs:ServerConfig[] = req.body.servers
-    res.send("{}")
+    res.send(await getStats())
     for (const serverconfig of configs) {
+        
         if (!serverconfig.deploy) continue
         var installed = await getServerInstalledVersion(serverconfig.name)
         if (!installed) {
@@ -117,14 +119,23 @@ hostapp.post("/update",async (req,res) => {
         }
     }
 })
-
+/*
 hostapp.get("/stats/:name", (req, res) => {
     var name = req.params.name
 
+})*/
+
+hostapp.post("/start/:name",async (req,res) => {
+    var config = CONFIG.servers.find(s => s.name = req.params.name)
+    if (!config) return 551
+    var status = await launchNormalSafe(config)
+    res.status(status)
+    res.send()
 })
 
+hostapp.get("")
 
 
-hostapp.listen(8732, () => {
+hostapp.listen(8732, MCSERVER_BIND, () => {
     console.log("Management Server running!");
 })
