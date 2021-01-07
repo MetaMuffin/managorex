@@ -2,8 +2,6 @@ import { CONFIG, MCSERVER_IP } from "../config/config";
 import fetch from "node-fetch"
 import { ServerInfo, ServerStats, ServerStatsMerged } from "../config/types";
 import {inspect} from "util"
-import { runningServers } from "../mcserver/server";
-
 export var stats_last: ServerStats = {}
 export var stats_last_update = 0;
 export var stats_merged: ServerStatsMerged = {}
@@ -24,7 +22,7 @@ async function update() {
     for (const servername in stats_last) {
         if (!stats_last.hasOwnProperty(servername)) continue
         var state = "offline"
-        if (runningServers.find(s => s.config.name == servername)) state = "online"
+        //if (.find(s => s.config.name == servername)) state = "online"
         stats_merged[servername] = {
             meta: {},
             values: {},

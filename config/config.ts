@@ -8,7 +8,7 @@ const VERSIONS = {
 }
 
 export const MCSERVER_IP = "localhost"
-export const SERVERS_ROOT = "/homedrive/muffin/minecraft/servers"
+export const SERVERS_ROOT = "/home/muffin/minecraft/servers"
 export const MCSERVER_BIND = "127.0.0.1" // use 127.0.0.1 if both apps are running on the same device. Else use 0.0.0.0, which is unsafe if the port is exposed to the internet
 
 
@@ -47,6 +47,32 @@ export const CONFIG: Config = {
                 },
                 showConsole: true
             }
+        },
+        {
+            display:{
+                name: "blub server",
+                description: "ein blub server",
+                exposedStats: {
+                    "minecraft:custom.minecraft:play_one_minute": {
+                        display: "Online zeit",
+                        primary: true,
+                        factor: 1 / 1000 / 60,
+                        unit: "m"
+                    },
+                    "minecraft:mined.minecraft:dirt": {
+                        display: "Dirt abgebaut"
+                    }
+                }
+            },
+            name: "blub",
+            allowWebStart: true,
+            deploy: {
+                arguments: [],
+                options: {
+                    port: 25569
+                },
+                version: VERSIONS.VANILLA_16_3
+            },
         }
     ],
 }

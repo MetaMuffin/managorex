@@ -35,7 +35,7 @@ export function downloadAndSave(path: string, url: string): Promise<void> {
             response.pipe(file);
             file.on("finish", async () => {
                 file.close();
-                await writeFile(join(path,".version"),url)
+                await writeFile(join(path, ".version"), url)
                 console.log("  Done");
                 resolve()
             });
@@ -51,20 +51,20 @@ export async function updateServer(config: ServerConfig) {
     if (!config.deploy) return
     var path = pathToServer(config.name)
     //await unlink(join(path,"server.jar"))
-    await downloadAndSave(path,config.deploy.version.url)
+    await downloadAndSave(path, config.deploy.version.url)
 }
 
 export async function rebuildProperties(config: ServerConfig) {
     console.log(`Rebuilding server.properties for ${config.name}`);
-    var path = join(pathToServer(config.name),"server.properties")
-    var default_file_path = join(__dirname,"../config/default.properties")
+    var path = join(pathToServer(config.name), "server.properties")
+    var default_file_path = join(__dirname, "../config/default.properties")
     var props = (await readFile(default_file_path)).toString().split("\n")
 
     for (const key in config.deploy?.options) {
         if (Object.prototype.hasOwnProperty.call(config.deploy?.options, key)) {
             //@ts-ignore
             const newValue = config.deploy?.options[key];
-            const keyProp = key.replace("_","-")
+            const keyProp = key.replace("_", "-")
             props.map(p => {
                 if (p.split("=")[0] == keyProp) {
                     var newProp = p.split("=")[0] + "=" + newValue
@@ -75,7 +75,7 @@ export async function rebuildProperties(config: ServerConfig) {
             })
         }
     }
-    await writeFile(path,props.join("\n"))
+    await writeFile(path, props.join("\n"))
 }
 
 
@@ -83,38 +83,48 @@ export async function setupServer(config: ServerConfig) {
     console.log(`Deploying server ${config.name}`);
     if (!config.deploy) return
     var path = pathToServer(config.name)
-    await mkdir(path,{recursive: true})
+    await mkdir(path, { recursive: true })
+    await writeFile(join(path, ".state"), "deploying")
     await downloadAndSave(path, config.deploy.version.url)
     await launchAndQuit(config)
     await acceptEula(config.name)
     await rebuildProperties(config)
+    await writeFile(join(path, ".state"), "ready")
 }
 
-export async function getServerInstalledVersion(name: string): Promise<string | undefined> {
+export async function getServerInstalledVersion(name: string): Promise<string> {
     var path = pathToServer(name)
     try {
+        var state = (await readFile(join(path, ".state"))).toString()
+        if (state != "ready") return "@" + state
+    } catch (e) { return "@not-found" }
+    try {
         var res = (await readFile(join(path, ".version"))).toString()
-        return res
-    } catch(e) {
-        return undefined
+        return "@ready " + res
+    } catch (e) {
+        return "@error"
     }
 }
 
 
-//mcapp.use(express.urlencoded({extended: true}))
 hostapp.use(express.json())
 
-hostapp.post("/update",async (req,res) => {
+hostapp.post("/update", async (req, res) => {
     console.log("Update requested");
-    var configs:ServerConfig[] = req.body.servers
+    var configs: ServerConfig[] = req.body.servers
     res.send(await getStats())
     for (const serverconfig of configs) {
-        
         if (!serverconfig.deploy) continue
         var installed = await getServerInstalledVersion(serverconfig.name)
-        if (!installed) {
+        console.log(installed);
+        
+        if (installed == "@not-found") {
             await setupServer(serverconfig)
-        } else if (installed != serverconfig.deploy.version.url) {
+        } else if (installed == "@deploying") {
+
+        } else if (!installed.endsWith(serverconfig.deploy.version.url)) {
+            console.log(installed);
+            console.log(serverconfig.deploy.version.url);
             await updateServer(serverconfig)
         }
     }
@@ -125,7 +135,7 @@ hostapp.get("/stats/:name", (req, res) => {
 
 })*/
 
-hostapp.post("/start/:name",async (req,res) => {
+hostapp.post("/start/:name", async (req, res) => {
     var config = CONFIG.servers.find(s => s.name = req.params.name)
     if (!config) return 551
     var status = await launchNormalSafe(config)
